@@ -17,4 +17,7 @@ wl_status_t setupWiFi(String ssid = "", String passwd = "", int timeout = 5);
 // True if the string is a valid number
 bool isNumber(String str);
 
+// True if the string is a valid IP address
+bool isIPAddress(String str);
+
 #endif

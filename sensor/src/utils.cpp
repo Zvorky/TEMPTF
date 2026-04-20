@@ -67,6 +67,7 @@ wl_status_t setupWiFi(String ssid, String passwd, int timeout) {
     Serial.println(WiFi.localIP());
     Serial.print("MAC: ");
     Serial.println(WiFi.macAddress());
+    Serial.println();
   }
   else Serial.printf("\nCould not connect to \"%s\"!\n", ssid.c_str());
 
@@ -86,4 +87,10 @@ bool isNumber(String str) {
     }
   }
   return true;
+}
+
+
+bool isIPAddress(String str) {
+  IPAddress ip;
+  return ip.fromString(str);
 }
