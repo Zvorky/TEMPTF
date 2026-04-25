@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -24,13 +25,12 @@ def setup_logging():
         return logger
 
     logger.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
     file_handler = logging.FileHandler(SESSION_LOG_FILE, encoding="utf-8")
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
+    stream_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
 
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
@@ -42,6 +42,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         client.subscribe(MQTT_TOPIC + "+")
         logger.info("Connected to MQTT broker successfully")
+        logger.info(f"Running on: {mqtt.socket.gethostbyname(mqtt.socket.gethostname())}:{MQTT_PORT}")
     else:
         logger.error("Connection failed with code %s", rc)
 
@@ -60,15 +61,16 @@ def on_message(client, userdata, msg):
 
         try:
             raw_value = msg.payload.decode().strip()
-            temperature = float(raw_value)
         except UnicodeDecodeError:
             logger.warning("Could not decode payload as UTF-8")
             return
-        except (ValueError, TypeError):
-            logger.warning("Could not convert value '%s' to float", raw_value)
+
+        if not re.fullmatch(r"-?\d+", raw_value):
+            logger.warning("Invalid payload format '%s'", raw_value)
             return
 
-        logger.info("%s: %.1f°C", sensor_id, temperature)
+        temperature = int(raw_value) / 100
+        logger.info("%s: \t%.2f\t°C", sensor_id, temperature)
     except Exception as error:
         logger.exception("Error processing message: %s", error)
 

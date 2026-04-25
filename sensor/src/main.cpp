@@ -65,7 +65,7 @@ void loop() {
 
     // Publish sensor data at regular intervals
     if (millis() - last_publish >= PUBLISH_INTERVAL) {
-        const char* payload = "36.0"; // Test value
+        const char* payload = "3600"; // Test value
         publish_sensor_data((char*)payload);
         last_publish = millis();
     }
