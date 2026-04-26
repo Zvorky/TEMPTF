@@ -7,6 +7,8 @@ This repository contains the specific implementation for a subset of the distrib
  - [**ESP32 Module (Arduino Framework):**](sensor/README.md) Source code for the ESP32 platform using the Arduino framework.
  - **LM35 Sensor Integration:** Specialized logic for measuring and validating data from the LM35 temperature sensor.
 
+Additional scripts for testing and simulation are included at [`tools/`](tools/).
+
 ### Authors
  - Cícero Pizetta Pizutti
  - [Enzo Zavorski Delevatti](https://github.com/zvorky)
