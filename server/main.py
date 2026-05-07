@@ -3,6 +3,7 @@ try:
 except Exception:
     mqtt = None
 
+import time # Importado para controlar o ciclo de 5 segundos
 from nmr import NMR
 
 
@@ -45,15 +46,14 @@ def on_message(client, _userdata, msg): # Função para processar mensagens rece
             print(f"Formato de payload inválido '{payload}'")
             return
 
-        temperature = raw_value / 100
-        print(f"{sensor_id}: {temperature:.2f} °C") # Mostra a temperatura recebida do sensor. Por exemplo: "sensor1: 23.45 °C"
-
+        # Agora o on_message APENAS atualiza o valor no votador.
+        # A avaliação (votação) foi movida para o loop principal para respeitar o ciclo de 5s.
         if voter is not None:
-            voter.update_sensor(sensor_id, raw_value) # Se o votador existir, atualiza o valor do sensor com o valor recebido
-            result = voter.evaluate() # Aí avalia o estado dos sensores e retorna a temperatura final e o estado do sistema
-            print(f"TEMPTF: {result['temperatura'] / 100:.2f} °C ({result['estado']})") #  Algo assim: "TEMPTF: 23.45 °C (consenso)"
+            voter.update_sensor(sensor_id, raw_value) 
+            # print(f"Log: {sensor_id} recebeu {raw_value/100:.2f} °C") # Opcional para debug
+            
     except Exception as error:
-        print(f"Erro ao processar mensagem: {error}")
+        print(f"Erro ao receber mensagem: {error}")
 
 
 def on_disconnect(client, _userdata, _flags, rc, _properties=None): 
@@ -79,9 +79,33 @@ def run():
     try:
         print(f"Conectando ao broker MQTT em {MQTT_BROKER}:{MQTT_PORT}...")
         client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-        client.loop_forever() # Inicia o loop de processamento de mensagens do MQTT. Ele vai ficar rodando e chamando as funções de callback quando receber mensagens ou quando se conectar/desconectar
+        
+        # loop_start inicia uma thread separada para o MQTT, não travando o código abaixo
+        client.loop_start() 
+
+        print("Iniciando loop de votação (Ciclo de 5 segundos)...")
+        while True:
+            # O trabalho exige uma medição a cada 5 segundos
+            time.sleep(5) 
+            
+            # Realiza a votação com os dados acumulados no intervalo
+            result = voter.evaluate() 
+            
+            if result['estado'] == "sem_dados":
+                print("Aguardando dados dos sensores...")
+            else:
+                # Mostra a temperatura final e o estado conforme exigido
+                # "TEMPTF: 23.45 °C (consenso)"
+                temp_formatada = result['temperatura'] / 100
+                print(f"TEMPTF: {temp_formatada:.2f} °C ({result['estado']})")
+
+    except KeyboardInterrupt:
+        print("\nEncerrando servidor...")
     except Exception as error:
-        print(f"Erro de conexão: {error}")
+        print(f"Erro de execução: {error}")
+    finally:
+        client.loop_stop() # Para a thread do MQTT com segurança
+        client.disconnect()
 
 
 if __name__ == "__main__":
