@@ -22,3 +22,6 @@ build/
 # System
 Thumbs.db
 .DS_Store
+
+# Diretórios
+sensor/
