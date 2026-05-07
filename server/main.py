@@ -1,103 +1,87 @@
-import logging
-import re
-from datetime import datetime
-from pathlib import Path
+try:
+    import paho.mqtt.client as mqtt  
+except Exception:
+    mqtt = None
 
-import paho.mqtt.client as mqtt
+from nmr import NMR
 
 
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
 MQTT_TOPIC = "sensors/"
 
-LOG_DIR = Path(__file__).resolve().parent / ".logs"
-SESSION_LOG_FILE = LOG_DIR / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-LOGGER_NAME = "temptf.server"
-
-logger = logging.getLogger(LOGGER_NAME)
+voter = None
 
 
-def setup_logging():
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-    logger = logging.getLogger(LOGGER_NAME)
-    if logger.handlers:
-        return logger
-
-    logger.setLevel(logging.INFO)
-
-    file_handler = logging.FileHandler(SESSION_LOG_FILE, encoding="utf-8")
-    file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
-    logger.propagate = True
-    return logger
-
-
-def on_connect(client, userdata, flags, rc, properties=None):
-    if rc == 0:
-        client.subscribe(MQTT_TOPIC + "+")
-        logger.info("Connected to MQTT broker successfully")
-        logger.info(f"Running on: {mqtt.socket.gethostbyname(mqtt.socket.gethostname())}:{MQTT_PORT}")
+def on_connect(client, _userdata, _flags, rc, _properties=None): # Função para se conectar ao MQTT
+    if rc == 0: # Se a conexão for bem sucedida (código 0)...
+        client.subscribe(MQTT_TOPIC + "+") # Se inscreve no tópico "sensors/+" . O '+' quer dizer "qualquer coisa"
+        print("Conectado ao broker MQTT com sucesso")
+        print(f"Executando em: {mqtt.socket.gethostbyname(mqtt.socket.gethostname())}:{MQTT_PORT}") # Algo assim: "Executando em: IP_LOCAL:PORTA"
     else:
-        logger.error("Connection failed with code %s", rc)
+        print(f"Falha na conexão, código {rc}")
 
 
-def on_message(client, userdata, msg):
+def on_message(client, _userdata, msg): # Função para processar mensagens recebidas do MQTT
     try:
-        if msg.topic.startswith(MQTT_TOPIC):
-            sensor_id = msg.topic[len(MQTT_TOPIC):]
-        else:
-            logger.warning("Unexpected topic '%s'", msg.topic)
+        if not msg.topic.startswith(MQTT_TOPIC): # Se o tópico da mensagem não começar com "sensors/", é um tópico inesperado
+            print(f"Tópico inesperado '{msg.topic}'")
             return
 
-        if not sensor_id or "/" in sensor_id:
-            logger.warning("Unexpected topic '%s'", msg.topic)
+        sensor_id = msg.topic[len(MQTT_TOPIC):] # Extrai o ID do sensor do tópico. Por exemplo, se o tópico for "sensors/sensor1", o sensor_id vai ser "sensor1"
+        if not sensor_id or "/" in sensor_id: # Se não tiver um ID de sensor válido, é um tópico inesperado
+            print(f"Tópico inesperado '{msg.topic}'")
             return
 
         try:
-            raw_value = msg.payload.decode().strip()
+            payload = msg.payload.decode().strip() # Tenta decodificar o payload da mensagem como UTF-8 e remover espaços em branco no início e no fim
         except UnicodeDecodeError:
-            logger.warning("Could not decode payload as UTF-8")
+            print("Não foi possível decodificar o payload como UTF-8")
             return
 
-        if not re.fullmatch(r"-?\d+", raw_value):
-            logger.warning("Invalid payload format '%s'", raw_value)
+        try:
+            raw_value = int(payload) # Tenta transformar em int. Se o payload não for, não vale
+        except ValueError:
+            print(f"Formato de payload inválido '{payload}'")
             return
 
-        temperature = int(raw_value) / 100
-        logger.info("%s: \t%.2f\t°C", sensor_id, temperature)
+        temperature = raw_value / 100
+        print(f"{sensor_id}: {temperature:.2f} °C") # Mostra a temperatura recebida do sensor. Por exemplo: "sensor1: 23.45 °C"
+
+        if voter is not None:
+            voter.update_sensor(sensor_id, raw_value) # Se o votador existir, atualiza o valor do sensor com o valor recebido
+            result = voter.evaluate() # Aí avalia o estado dos sensores e retorna a temperatura final e o estado do sistema
+            print(f"TEMPTF: {result['temperatura'] / 100:.2f} °C ({result['estado']})") #  Algo assim: "TEMPTF: 23.45 °C (consenso)"
     except Exception as error:
-        logger.exception("Error processing message: %s", error)
+        print(f"Erro ao processar mensagem: {error}")
 
 
-def on_disconnect(client, userdata, flags, rc, properties=None):
-    if rc != 0:
-        logger.warning("Unexpected disconnection: %s", rc)
+def on_disconnect(client, _userdata, _flags, rc, _properties=None): 
+    if rc != 0: # Se a desconexão não for intencional (código diferente de 0)...
+        print(f"Desconexão inesperada: {rc}")
 
 
 def create_client():
+    if mqtt is None:
+        raise RuntimeError("paho-mqtt não está instalado; instale com: pip install paho-mqtt")
     client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
-    return client
+    return client 
 
 
 def run():
-    setup_logging()
+    global voter
+    voter = NMR()
     client = create_client()
 
     try:
-        logger.info("Connecting to MQTT broker at %s:%s...", MQTT_BROKER, MQTT_PORT)
+        print(f"Conectando ao broker MQTT em {MQTT_BROKER}:{MQTT_PORT}...")
         client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-        client.loop_forever()
+        client.loop_forever() # Inicia o loop de processamento de mensagens do MQTT. Ele vai ficar rodando e chamando as funções de callback quando receber mensagens ou quando se conectar/desconectar
     except Exception as error:
-        logger.error("Connection error: %s", error)
+        print(f"Erro de conexão: {error}")
 
 
 if __name__ == "__main__":

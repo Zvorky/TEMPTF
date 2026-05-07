@@ -1,103 +1,65 @@
-# TEMPTF - Central Voter Server
-This module implements the central voter server for the TEMPTF system. It is responsible for receiving temperature data from multiple sensors, applying the voting logic to determine the consensus temperature, and managing sensor isolation based on their performance. The server operates in a continuous loop, processing incoming data and updating the system state accordingly.
+# TEMPTF: Sistema de Sensor de Temperatura Tolerante a Falhas
 
----
+Implementação de um **Sistema de Sensor de Temperatura Tolerante a Falhas (TEMPTF)** com redundância sensorial e votação majoritária robusta para garantir a integridade dos dados, mesmo em caso de falhas.
 
-See [README.md](../README.md) for an overview of the entire project and its components.
+## Estrutura
 
-## TODO
-- [x] **Data Reception:** Listens for incoming temperature data from connected sensors.
-- [ ] **Voting Logic:** Implements the consensus algorithm to determine the final temperature reading based on the data received from the sensors.
-- [ ] **Sensor Isolation:** Monitors sensor performance and isolates any sensor that consistently diverges from the consensus value.
-- [ ] **Degraded Operation:** Continues to operate with remaining sensors if one sensor is isolated, and signals a degraded state if necessary.
-- [ ] **System Stability Monitoring:** Declares the system unstable if the remaining sensors diverge significantly, and displays the last safe measurement.
-- [ ] **Recovery Mechanism:** Continuously monitors isolated sensors for potential reintegration based on their performance.
+Este servidor (Python) implementa o votador central (NMR):
+- **`main.py`**: Aplicação MQTT que recebe dados dos sensores e executa a votação.
+- **`nmr.py`**: Núcleo da lógica de votação (isolamento, recuperação, fallback).
+- **`requirements.txt`**: Dependências do projeto.
 
-## Setup & Run
-This server uses MQTT at `localhost:1883` (topic `sensors/{sensor_id}`).  
-See [mosquitto.org/download](https://mosquitto.org/download/) for more installation options.
+Para o sensor ESP32, consulte [`../sensor/`](../sensor/).
+Para ferramentas e simuladores, consulte [`../tools/`](../tools/).
 
-### Linux
-1. Install and start the Mosquitto broker 
+### Autores
+ - Cícero Pizetta Pizutti
+ - [Enzo Zavorski Delevatti](https://github.com/zvorky)
+ - Felipe Borges da Silva
+ - [Thiago Reis Petereit Dos Santos](https://github.com/thiagopetereit)
 
-    #### **Debian/Ubuntu**:
+## Especificações Técnicas
 
-    ```bash
-    sudo apt update && sudo apt install -y mosquitto mosquitto-clients
-    sudo systemctl enable --now mosquitto
-    ```
-    Check whether the broker is running
-    ```bash
-    systemctl status mosquitto --no-pager
-    ```
+### 1. Dispositivos Sensores
+Cada unidade sensora segue protocolos rigorosos de transmissão e segurança:
+ - **Frequência de Dados:** Uma leitura de temperatura a cada 5 segundos.
+ - **Média Local:** Valor transmitido é a média de 10 leituras em 5 segundos.
+ - **Checkpoint:** Se o coeficiente de variação das 10 leituras exceder 10%, o dispositivo reverte ao último valor bem-sucedido.
+ - **Formato:** Temperatura em centésimos de grau (ex.: 2345 = 23.45°C).
+ - **Comunicação:** MQTT via tópico `sensors/{id}`.
 
-    #### **Snap Alternative**:
+### 2. Sistema Votador (NMR)
+O servidor processa dados dos sensores e determina a temperatura final do sistema:
+ - **Consenso & Falha Mascarada:** Se todos os sensores estão dentro de 10% da média, exibe o valor mínimo como consenso. Caso contrário, indica "falha mascarada".
+ - **Isolamento:** Sensor que divergir por 3 ciclos consecutivos é isolado.
+ - **Operação Degradada:** Sistema continua com 2 sensores ativos, sinalizando "degradado".
+ - **Instabilidade:** Se 2 sensores divergirem por > 10%, sistema é "instável" e exibe o último valor seguro.
+ - **Recuperação:** Sensores isolados são reintegrados após 3 leituras consistentes dentro da tolerância.
 
-    ```bash
-    sudo snap install mosquitto
-    sudo snap start mosquitto
-    ```
-    Check whether the broker is running
-    ```bash
-    snap services
-    ```
+### Como Usar
 
-    #### **Podman Alternative**:
+**Requisitos:**
+- Python 3.8+
+- Broker MQTT (ex.: Mosquitto) em `localhost:1883`
 
-    ```bash
-    podman run -d --name mosquitto \
-        -p 1883:1883 \
-        -v mosquitto-data:/mosquitto/data \
-        -v mosquitto-log:/mosquitto/log \
-        docker.io/library/eclipse-mosquitto:2
-    ```
-    Check whether the broker is running
-    ```bash
-    podman ps
-    podman logs mosquitto --tail 50
-    ```
-    Optional: generate a user systemd unit for auto-start
-    ```bash
-    podman generate systemd --name mosquitto --files --new
-    ```
+**Recomendação:**
+```bash
+python -m venv env
+env\Scripts\activate # no Windows
+```
 
-2. Create and activate a virtual environment in the server directory and install dependencies:
+**Instalação:**
+```bash
+pip install -r requirements.txt
+```
 
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip install -r requirements.txt
-    ```
+**Iniciar o servidor votador:**
+```bash
+python main.py
+```
 
-3. Run the server:
+**Simular sensores (em outro terminal):**
+```bash
+python ../tools/simulate_sensor.py
+```
 
-    ```bash
-    python main.py
-    ```
-
-### Windows
-
-1. Install Mosquitto with `winget` and start the broker service (PowerShell as Administrator):
-
-    ```powershell
-    winget install EclipseMosquitto.Mosquitto
-    net start mosquitto
-    ```
-    Check whether the broker is running
-    ```powershell
-    Get-Service mosquitto
-    ```
-
-2. Create and activate a virtual environment in the server directory and install dependencies:
-
-    ```powershell
-    python -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
-    ```
-
-3. Run the server:
-
-    ```powershell
-    python main.py
-    ```
