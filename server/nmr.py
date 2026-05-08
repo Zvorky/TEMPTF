@@ -1,4 +1,4 @@
-import time # NOVO: Importação necessária para lidar com o timeout dos sensores
+import time # Serve para lidar com o timeout dos sensores
 
 class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente implementa o algoritmo de votação majoritária com isolamento e recuperação de sensores. Ela mantém um dicionário de sensores, onde cada sensor tem um valor, um contador de concordância e um status de isolamento
     def __init__(self, tolerancia=10, passos_isolamento=3, passos_recuperacao=3, valor_falha=None, verboso=False, logger=None):
@@ -21,7 +21,7 @@ class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente im
             self.sensores[sensor_id] = {"v": value, "c": 0, "iso": False, "t": time.time()} 
         else: 
             entry["v"] = value # Se o sensor existir, atualiza o valor do sensor com o valor recebido
-            entry["t"] = time.time() # NOVO: Atualiza a hora da última leitura recebida
+            entry["t"] = time.time() # Atualiza a hora da última leitura recebida
 
     def _dentro_tolerancia(self, a, b) -> bool: # Função pra verificar se dois valores estão dentro da tolerância
         if b == 0: # Se for 0, pra não quebrar no meio...
@@ -108,7 +108,7 @@ class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente im
 
 
 """
-Pra quem não tá habituado, por ser feio, mas fazer 'data["c"] = data["c"] - 1 if data["c"] < 0 else -1' é a mesmíssima coisa que fazer:
+Pra quem não tá habituado, pode ser feio, mas fazer 'data["c"] = data["c"] - 1 if data["c"] < 0 else -1' é a mesmíssima coisa que fazer:
 if data["c"] < 0:
     data["c"] = data["c"] - 1
 else:
