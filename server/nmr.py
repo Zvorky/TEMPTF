@@ -10,14 +10,14 @@ class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente im
         self.valor_falha = valor_falha # Serve para definir o valor de temperatura que o sistema vai retornar quando não tiver nenhum sensor confiável (todos isolados ou sem dados)
         self.ultimo_seguro = valor_falha # Serve para guardar o último valor de temperatura considerado seguro (com base nos sensores ativos), pra usar como fallback quando os sensores ficarem instáveis
 
-        # NOVO: Contadores para os requisitos de recuperação de instabilidade (3 ciclos) estipulados no trabalho
+        # Contadores para os requisitos de recuperação de instabilidade (3 ciclos) estipulados no trabalho
         self.ciclos_concordancia_degradado = 3 # Inicializa em 3 pra já começar exibindo os dados se ligar direto com 2 sensores
         self.ciclos_concordancia_consenso = 3  # Inicializa em 3 pra já começar exibindo consenso se o sistema ligar com 3 sensores normais
 
     def update_sensor(self, sensor_id, value): # Função pra atualizar o valor de um sensor
         entry = self.sensores.get(sensor_id) # Tenta pegar a entrada do sensor no dicionário
         if not entry:
-            # NOVO: A chave "t" salva a hora exata que a leitura chegou
+            # A chave "t" salva a hora exata que a leitura chegou
             self.sensores[sensor_id] = {"v": value, "c": 0, "iso": False, "t": time.time()} 
         else: 
             entry["v"] = value # Se o sensor existir, atualiza o valor do sensor com o valor recebido
@@ -33,7 +33,7 @@ class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente im
     def evaluate(self): # Função pra avaliar o estado dos sensores e retornar a temperatura final e o estado do sistema
         agora = time.time()
         
-        # NOVO: Cria um dicionário temporário apenas com os sensores que enviaram dados nos últimos 12 segundos.
+        # Cria um dicionário temporário apenas com os sensores que enviaram dados nos últimos 12 segundos.
         # Se um sensor pifar e parar de enviar via MQTT, ele é ignorado automaticamente.
         sensores_vivos = {k: v for k, v in self.sensores.items() if (agora - v.get("t", 0)) < 12}
 
@@ -63,12 +63,12 @@ class NMR: # Essa classe aqui é o núcleo de todo o sistema, ela basicamente im
             return {"temperatura": self.ultimo_seguro or self.valor_falha, "estado": "instavel"} # Algo assim: "temperatura": último valor seguro ou valor de falha, "estado": "instável"
         
         if len(ativos_vals) == 1: # Se tiver só um sensor ativo...
-            self.ciclos_concordancia_degradado = 0 # NOVO: Reseta o contador
+            self.ciclos_concordancia_degradado = 0 # Reseta o contador
             return {"temperatura": self.ultimo_seguro or ativos_vals[0], "estado": "instavel"} # Algo assim: "temperatura": último valor seguro ou valor do único sensor, "estado": "instável"
         
         if len(ativos_vals) == 2: # Se tiver dois sensores ativos...
             a, b = ativos_vals # Atribui os valores dos dois sensores: A e B
-            self.ciclos_concordancia_consenso = 0 # NOVO: Como só tem 2 sensores, zera a contagem pro consenso de 3
+            self.ciclos_concordancia_consenso = 0 # Como só tem 2 sensores, zera a contagem pro consenso de 3
             
             if self._dentro_tolerancia(a, b): # Se os dois sensores tão dentro da tolerância um do outro...
                 self.ciclos_concordancia_degradado += 1 # Soma 1 ciclo de concordância
