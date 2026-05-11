@@ -16,7 +16,7 @@ Thiago Reis Petereit Dos Santos - 198853
 
 #define PINO_LM35 34 // Pino analógico do LM35
 #define PORTA_MQTT 1883
-#define CLIENTE_MQTT "sensorA_grupo4"
+#define CLIENTE_MQTT "sensorA_grupo1"
 #define TOPICO_MQTT "sensors/lm35"
 
 #define INTERVALO_LEITURA 500      // 500ms para 10 leituras em 5s
