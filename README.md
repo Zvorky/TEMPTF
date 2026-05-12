@@ -8,6 +8,7 @@ This repository contains the specific implementation for a subset of the distrib
  - [**Central Voter Server:**](server/README.md) The application responsible for collecting data via network, executing voting logic, and managing sensor isolation states.
  - [**ESP32 Module (Arduino Framework):**](sensor/README.md) Source code for the ESP32 platform using the Arduino framework.
  - **LM35 Sensor Integration:** Specialized logic for measuring and validating data from the LM35 temperature sensor.
+ - [**MQTT Communication:**](COMMUNICATION.md) Details about the communication protocol used for data transmission between sensors and the central server.
 
 Additional scripts for testing and simulation are included at [`tools/`](tools/).
 

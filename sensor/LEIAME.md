@@ -8,8 +8,8 @@ Este módulo contém o código-fonte para a plataforma ESP32 usando o framework 
 Veja o [LEIAME.md](../LEIAME.md) da raiz para uma visão geral do projeto completo e seus componentes.
 
 ## TODO
-- [ ] **Integração do Sensor LM35:** Lê dados do sensor LM35 e os processa de acordo com a lógica definida.
-- [ ] **Média Local:** Calcula a média de 10 leituras regulares realizadas em uma janela de 5 segundos para garantir estabilidade dos dados.
-- [ ] **Verificação de Segurança (Checkpoint):** Implementa um mecanismo para retornar à última medição bem-sucedida se o coeficiente de variação ultrapassar 10%, garantindo que apenas dados confiáveis sejam transmitidos.
-- [ ] **Transmissão de Dados:** Transmite as leituras processadas ao servidor votador central a cada 5 segundos, em Celsius com duas casas decimais.
-- [ ] **Tratamento de Erros:** Monitora o desempenho do sensor e lida com anomalias nas leituras para manter a integridade dos dados enviados ao servidor.
+- [x] **Integração do Sensor LM35:** Lê dados do sensor LM35 e os processa de acordo com a lógica definida.
+- [x] **Média Local:** Calcula a média de 10 leituras regulares realizadas em uma janela de 5 segundos para garantir estabilidade dos dados.
+- [x] **Verificação de Segurança (Checkpoint):** Implementa um mecanismo para retornar à última medição bem-sucedida se o coeficiente de variação ultrapassar 10%, garantindo que apenas dados confiáveis sejam transmitidos.
+- [x] **Transmissão de Dados:** Transmite as leituras processadas ao servidor votador central a cada 5 segundos, em Celsius com duas casas decimais.
+- [x] **Tratamento de Erros:** Monitora o desempenho do sensor e lida com anomalias nas leituras para manter a integridade dos dados enviados ao servidor.
