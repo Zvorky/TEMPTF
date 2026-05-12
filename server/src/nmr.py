@@ -3,15 +3,15 @@
 
 class SensorData:
     def __init__(self, raw_value : int, factor: float = 1.0, offset: int = 0):
-        self.factor = factor    # Factor to multiply raw value; Affects get_value()
-        self.offset = offset    # Offset to add to the scaled value; Affects get_value()
-        self._value = raw_value # Raw value from the sensor
-        self._isolated = False  # Whether the sensor is currently isolated due to disagreement
-        self._agree_count = 0   # Consecutive agreements/disagreements; Negative = Disagreements
+        self.factor = factor       # Factor to multiply raw value; Affects get_value()
+        self.offset = offset       # Offset to add to the scaled value; Affects get_value()
+        self.raw_value = raw_value # Raw value from the sensor
+        self._isolated = False     # Whether the sensor is currently isolated due to disagreement
+        self._agree_count = 0      # Consecutive agreements/disagreements; Negative = Disagreements
 
     def get_value(self) -> int:
-        ''' Get the calibrated value in '''
-        return int(self._value * self.factor + self.offset)
+        ''' Get the calibrated value '''
+        return int(self.raw_value * self.factor + self.offset)
 
     def get_agree_count(self) -> int:
         return self._agree_count
@@ -21,7 +21,7 @@ class SensorData:
 
     def update(self, raw_value: int):
         ''' Update the raw value from the sensor '''
-        self._value = raw_value
+        self.raw_value = raw_value
 
     def tune(self, factor: float | None = None, offset: int | None = None):
         '''
@@ -68,7 +68,7 @@ class NMR:
 
     # NMR Voter Logic
     def get_value(self) -> int | None:
-        ''' Return the median value of active sensors '''
+        ''' Return the minimum value of active sensors in consensus '''
         active_sensors = []
         isolated_sensors = []
 
@@ -85,6 +85,4 @@ class NMR:
             return self.failsafe
 
         values = [s.get_value() for _, s in active_sensors]
-        median = sorted(values)[len(values) // 2]
-
-        return median
+        return min(values)
