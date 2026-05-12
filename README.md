@@ -1,6 +1,8 @@
 # TEMPTF: Fault-Tolerant Temperature Sensor System
 This project focuses on the development of a **Fault-Tolerant Temperature Sensor System (TEMPTF)**. It simulates a high-reliability monitoring environment for equipment used in the transportation of human organs for transplantation. The system is designed to provide accurate temperature readings through redundancy and a robust voting mechanism to ensure data integrity even in the event of sensor failures.
 
+[Leia-me em Português](LEIAME.md)
+
 ## Repository Scope
 This repository contains the specific implementation for a subset of the distributed system:
  - [**Central Voter Server:**](server/README.md) The application responsible for collecting data via network, executing voting logic, and managing sensor isolation states.
@@ -10,9 +12,9 @@ This repository contains the specific implementation for a subset of the distrib
 Additional scripts for testing and simulation are included at [`tools/`](tools/).
 
 ### Authors
- - Cícero Pizetta Pizutti
+ - [Cícero Pizetta Pizutti](https://github.com/ciceropizutti)
  - [Enzo Zavorski Delevatti](https://github.com/zvorky)
- - Felipe Borges da Silva
+ - [Felipe Borges da Silva](https://github.com/znyctus)
  - [Thiago Reis Petereit Dos Santos](https://github.com/thiagopetereit)
 
 ## Technical Specifications & Logic

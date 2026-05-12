@@ -1,9 +1,11 @@
 # TEMPTF - Central Voter Server
 This module implements the central voter server for the TEMPTF system. It is responsible for receiving temperature data from multiple sensors, applying the voting logic to determine the consensus temperature, and managing sensor isolation based on their performance. The server operates in a continuous loop, processing incoming data and updating the system state accordingly.
 
+[Leia-me em Português](LEIAME.md)
+
 ---
 
-See [README.md](../README.md) for an overview of the entire project and its components.
+See the root [README.md](../README.md) for an overview of the entire project and its components.
 
 ## TODO
 - [x] **Data Reception:** Listens for incoming temperature data from connected sensors.

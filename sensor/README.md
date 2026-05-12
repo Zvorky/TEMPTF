@@ -1,9 +1,11 @@
 # TEMPTF - Sensor Module (ESP32 - Arduino Framework)
 This module contains the source code for the ESP32 platform using the Arduino framework. It is responsible for interfacing with the LM35 temperature sensor, collecting temperature data, applying local averaging and safety checks, and transmitting the processed temperature readings to the central voter server at regular intervals. The module ensures that the data is formatted correctly and adheres to the specified protocols for reliable communication within the TEMPTF system.
 
+[Leia-me em Português](LEIAME.md)
+
 ---
 
-See [README.md](../README.md) for an overview of the entire project and its components.
+See the root [README.md](../README.md) for an overview of the entire project and its components.
 
 ## TODO
 - [ ] **LM35 Sensor Integration:** Reads temperature data from the LM35 sensor and processes it according to the defined logic.
