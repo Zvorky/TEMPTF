@@ -22,6 +22,8 @@ Thiago Reis Petereit Dos Santos - 198853
 #define INTERVALO_LEITURA 500      // 500ms para 10 leituras em 5s
 #define INTERVALO_PUBLICACAO 5000  // Ciclo de 5 segundos
 
+#define OFFSET_LEITURA 0.0 // Ajuste de calibração, se necessário
+
 // ---[ CONFIGURAÇÕES ]---
 const String ssid = "";
 const String senha = "";
@@ -52,8 +54,8 @@ void setup() {
     pinMode(PINO_LM35, INPUT);
 
     // Conexão WiFi e Broker
-    while (configurar_wifi(ssid, senha) != WL_CONNECTED) delay(1000);
-    while (!eh_ip(ip_broker_mqtt)) ip_broker_mqtt = entrada_serial("IP do Broker MQTT: ");
+    while (setupWiFi(ssid, senha) != WL_CONNECTED) delay(1000);
+    while (!isIPAddress(ip_broker_mqtt)) ip_broker_mqtt = input("IP do Broker MQTT: ");
     
     clienteMqtt.setServer((char*)ip_broker_mqtt.c_str(), PORTA_MQTT);
 }
@@ -93,8 +95,12 @@ void loop() {
             if (cv > 10.0) {
                 Serial.println("Aviso: CV > 10%! Medição instável.");
                 if (tem_valor_seguro) {
-                    Serial.println("Usando Checkpoint seguro.");
+                    Serial.println("Usando Checkpoint seguro: " + String(ultimo_valor_seguro, 2) + "°C");
                     publicar_dados(ultimo_valor_seguro);
+                } else {
+                    // Mantém a cadência de 5s mesmo antes de existir checkpoint válido.
+                    Serial.println("Sem checkpoint seguro ainda. Publicando média atual para manter cadência.");
+                    publicar_dados(media);
                 }
             } else {
                 ultimo_valor_seguro = media;
@@ -122,7 +128,7 @@ bool garantir_conexao_mqtt() {
 
 void publicar_dados(float temperatura) {
     if (!garantir_conexao_mqtt()) return;
-    int valor_inteiro = (int)(temperatura * 100);
+    int valor_inteiro = (int)lroundf(temperatura * 100.0f);
     char payload[16];
     sprintf(payload, "%d", valor_inteiro);
     if (clienteMqtt.publish(TOPICO_MQTT, payload)) {
@@ -133,5 +139,6 @@ void publicar_dados(float temperatura) {
 float ler_lm35() {
     int cru = analogRead(PINO_LM35);
     float voltagem = cru * (3.3 / 4095.0);
-    return voltagem * 100.0;
+    // O lm35 tem uma saída linear de 10mV/°C, então multiplicamos a voltagem por 100 para obter a temperatura em °C.
+    return voltagem * 100.0 + OFFSET_LEITURA;
 }
