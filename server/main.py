@@ -1,10 +1,15 @@
 import logging
 import re
+import time
 from datetime import datetime
 from pathlib import Path
+from src import nmr
 
 import paho.mqtt.client as mqtt
 
+
+NMR_LOOP_INTERVAL = 5 # seconds
+NMR_LOOP_ACTIVE = False
 
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
@@ -15,6 +20,8 @@ SESSION_LOG_FILE = LOG_DIR / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 LOGGER_NAME = "temptf.server"
 
 logger = logging.getLogger(LOGGER_NAME)
+sensors = {}
+nmr = nmr.NMR(tolerance=10, isolation_steps=3, recovery_steps=3, failsafe=None, verbose=True)
 
 
 def setup_logging():
@@ -69,7 +76,12 @@ def on_message(client, userdata, msg):
             logger.warning("Invalid payload format '%s'", raw_value)
             return
 
-        temperature = int(raw_value) / 100
+        if sensor_id not in sensors:
+            sensors[sensor_id] = nmr.SensorData(int(raw_value))
+        else:
+            sensors[sensor_id].update(int(raw_value))
+
+        temperature = int(raw_value) / 100 # float Cº
         logger.info("%s: \t%.2f\t°C", sensor_id, temperature)
     except Exception as error:
         logger.exception("Error processing message: %s", error)
@@ -89,15 +101,34 @@ def create_client():
 
 
 def run():
+    global NMR_LOOP_ACTIVE
+
     setup_logging()
     client = create_client()
 
     try:
         logger.info("Connecting to MQTT broker at %s:%s...", MQTT_BROKER, MQTT_PORT)
         client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-        client.loop_forever()
+        client.loop_start() # Start the network loop in a separate thread
     except Exception as error:
         logger.error("Connection error: %s", error)
+
+    time.sleep(1)
+    logger.info("Starting NMR loop with interval of %s seconds", NMR_LOOP_INTERVAL)
+    try:
+        NMR_LOOP_ACTIVE = True
+        while NMR_LOOP_ACTIVE:
+            last = time.time()
+            # TODO
+
+            # Busy Wait
+            while time.time() - last < NMR_LOOP_INTERVAL:
+                time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print()
+        logger.info("Shutting down...")
+        NMR_LOOP_ACTIVE = False
 
 
 if __name__ == "__main__":
