@@ -21,7 +21,7 @@ LOGGER_NAME = "temptf.server"
 
 logger = logging.getLogger(LOGGER_NAME)
 sensors = {}
-nmr = nmr.NMR(tolerance=10, isolation_steps=3, recovery_steps=3, failsafe=None, verbose=True)
+NMR = nmr.NMR(tolerance=10, isolation_steps=3, recovery_steps=3, failsafe=None, verbose=True)
 
 
 def setup_logging():

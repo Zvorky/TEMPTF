@@ -59,6 +59,15 @@ class NMR:
         self.isolation_steps = isolation_steps
         self.recovery_steps = recovery_steps
         self.failsafe = failsafe
+        self.verbose = verbose
+        self._state = "NORMAL"
+        self._last_safe = failsafe
+
+    def get_state(self) -> str:
+        return self._state
+
+    def get_last_safe(self) -> int | None:
+        return self._last_safe
 
     def update_sensor(self, sensor_id: str, raw_value: int):
         if sensor_id not in self.sensor_data:
@@ -79,10 +88,16 @@ class NMR:
             else:
                 active_sensors.append((sensor_id, data))
             if self.verbose:
-                print(f"Sensor {sensor_id} {"[ISOLATED]" if is_isolated else "[ACTIVE]"}: Value={data.get_value()} AgreeCount={data.get_agree_count()}")
+                status = "[ISOLATED]" if is_isolated else "[ACTIVE]"
+                print(f"Sensor {sensor_id} {status}: Value={data.get_value()} AgreeCount={data.get_agree_count()}")
+
+        # TODO: implement voting/isolation/recovery behavior directly in this cycle.
 
         if not active_sensors:
-            return self.failsafe
+            self._last_safe = self.failsafe
+            return self._last_safe
 
         values = [s.get_value() for _, s in active_sensors]
-        return min(values)
+        result = min(values)
+        self._last_safe = result
+        return self._last_safe
