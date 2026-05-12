@@ -20,8 +20,7 @@ SESSION_LOG_FILE = LOG_DIR / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 LOGGER_NAME = "temptf.server"
 
 logger = logging.getLogger(LOGGER_NAME)
-sensors = {}
-NMR = nmr.NMR(tolerance=10, isolation_steps=3, recovery_steps=3, failsafe=None, verbose=True)
+VOTER = nmr.NMR(tolerance=10, isolation_steps=3, recovery_steps=3, failsafe=None, verbose=True, logger=logger)
 
 
 def setup_logging():
@@ -76,10 +75,7 @@ def on_message(client, userdata, msg):
             logger.warning("Invalid payload format '%s'", raw_value)
             return
 
-        if sensor_id not in sensors:
-            sensors[sensor_id] = nmr.SensorData(int(raw_value))
-        else:
-            sensors[sensor_id].update(int(raw_value))
+        VOTER.update_sensor(sensor_id, int(raw_value))
 
         temperature = int(raw_value) / 100 # float Cº
         logger.info("%s: \t%.2f\t°C", sensor_id, temperature)
@@ -119,7 +115,15 @@ def run():
         NMR_LOOP_ACTIVE = True
         while NMR_LOOP_ACTIVE:
             last = time.time()
-            # TODO
+            voted = VOTER.get_value()
+            state = VOTER.get_state()
+
+            if state == "NO_DATA":
+                logger.info("Aguardando dados dos sensores...")
+            elif voted is None:
+                logger.warning("NMR sem valor votado disponível (estado=%s)", state)
+            else:
+                logger.info("TEMPTF: %.2f °C (%s)", voted / 100, state.lower())
 
             # Busy Wait
             while time.time() - last < NMR_LOOP_INTERVAL:
@@ -129,6 +133,9 @@ def run():
         print()
         logger.info("Shutting down...")
         NMR_LOOP_ACTIVE = False
+    finally:
+        client.loop_stop()
+        client.disconnect()
 
 
 if __name__ == "__main__":
