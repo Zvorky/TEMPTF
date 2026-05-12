@@ -8,6 +8,7 @@ Este repositório contém a implementação específica de um subconjunto do sis
  - [**Servidor Votador Central:**](server/LEIAME.md) Aplicação responsável por coletar dados via rede, executar a lógica de votação e gerenciar os estados de isolamento de sensores.
  - [**Módulo ESP32 (Framework Arduino):**](sensor/LEIAME.md) Código-fonte para a plataforma ESP32 usando o framework Arduino.
  - **Integração com Sensor LM35:** Lógica especializada para medição e validação de dados do sensor de temperatura LM35.
+ - [**Comunicação MQTT:**](COMUNICACAO.md) Detalhes sobre o protocolo de comunicação utilizado para transmissão de dados entre os sensores e o servidor central.
 
 Scripts adicionais para testes e simulação estão incluídos em [`tools/`](tools/).
 
