@@ -9,11 +9,11 @@ Veja o [LEIAME.md](../LEIAME.md) da raiz para uma visão geral do projeto comple
 
 ## TODO
 - [x] **Recepção de Dados:** Escuta dados de temperatura recebidos de sensores conectados.
-- [ ] **Lógica de Votação:** Implementa o algoritmo de consenso para determinar a leitura final de temperatura com base nos dados recebidos dos sensores.
-- [ ] **Isolamento de Sensores:** Monitora o desempenho dos sensores e isola qualquer sensor que divergir de forma consistente do consenso.
-- [ ] **Operação Degradada:** Continua operando com os sensores remanescentes se um sensor for isolado, e sinaliza estado degradado quando necessário.
-- [ ] **Monitoramento de Estabilidade do Sistema:** Declara o sistema instável se os sensores remanescentes divergirem significativamente e exibe a última medição segura.
-- [ ] **Mecanismo de Recuperação:** Monitora continuamente sensores isolados para possível reintegração com base no desempenho.
+- [x] **Lógica de Votação:** Implementa o algoritmo de consenso para determinar a leitura final de temperatura com base nos dados recebidos dos sensores.
+- [x] **Isolamento de Sensores:** Monitora o desempenho dos sensores e isola qualquer sensor que divergir de forma consistente do consenso.
+- [x] **Operação Degradada:** Continua operando com os sensores remanescentes se um sensor for isolado, e sinaliza estado degradado quando necessário.
+- [x] **Monitoramento de Estabilidade do Sistema:** Declara o sistema instável se os sensores remanescentes divergirem significativamente e exibe a última medição segura.
+- [x] **Mecanismo de Recuperação:** Monitora continuamente sensores isolados para possível reintegração com base no desempenho.
 
 ## Configuração e Execução
 Este servidor usa MQTT em `localhost:1883` (tópico `sensors/{sensor_id}`).  
