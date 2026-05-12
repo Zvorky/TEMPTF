@@ -1,6 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
+import main
 from main import LOGGER_NAME, MQTT_TOPIC, on_connect, on_message, setup_logging
 
 
@@ -38,6 +39,15 @@ def test_on_connect_logs_error_on_failure(caplog):
     assert client.subscribed_topics == []
 
 
+def test_on_disconnect_logs_warning_when_unexpected(caplog):
+    setup_logging()
+
+    with caplog.at_level("WARNING", logger=LOGGER_NAME):
+        main.on_disconnect(None, None, None, 1)
+
+    assert "Unexpected disconnection: 1" in caplog.text
+
+
 # ---------------------------------------------------------------------------
 # on_message — payloads válidos
 # ---------------------------------------------------------------------------
@@ -55,10 +65,13 @@ def test_on_message_logs_valid_temperature(payload, expected_log, caplog):
     setup_logging()
     msg = SimpleNamespace(topic="sensors/lm35", payload=payload)
 
+    main.VOTER.sensor_data.clear()
+
     with caplog.at_level("INFO", logger=LOGGER_NAME):
         on_message(None, None, msg)
 
     assert expected_log in caplog.text
+    assert "lm35" in main.VOTER.sensor_data
 
 
 # ---------------------------------------------------------------------------
@@ -112,3 +125,16 @@ def test_on_message_warns_for_unexpected_topic(topic, caplog):
         on_message(None, None, msg)
 
     assert "Unexpected topic" in caplog.text
+
+
+def test_on_message_updates_existing_sensor_value():
+    setup_logging()
+    main.VOTER.sensor_data.clear()
+
+    first = SimpleNamespace(topic="sensors/lm35", payload=b"2100")
+    second = SimpleNamespace(topic="sensors/lm35", payload=b"2200")
+
+    on_message(None, None, first)
+    on_message(None, None, second)
+
+    assert main.VOTER.sensor_data["lm35"].raw_value == 2200
