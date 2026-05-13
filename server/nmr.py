@@ -71,7 +71,7 @@ class NMR:
     def obter_ultimo_seguro(self) -> int | None:
         return self._ultimo_seguro
 
-    def atualizar_s'zensor(self, id_sensor: str, valor_bruto: int):
+    def atualizar_sensor(self, id_sensor: str, valor_bruto: int):
         if id_sensor not in self.dados_sensores:
             self.dados_sensores[id_sensor] = DadoSensor(valor_bruto)
         else:
