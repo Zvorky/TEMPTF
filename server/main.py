@@ -27,7 +27,7 @@ def on_connect(client, _userdata, flags, rc, _properties=None):
 def on_message(_client, _userdata, msg):
     try:
         if msg.topic.startswith(TOPICO_MQTT):
-            id_senso r = msg.topic[len(TOPICO_MQTT):]
+            id_sensor = msg.topic[len(TOPICO_MQTT):]
         else:
             return
 
