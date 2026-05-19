@@ -90,7 +90,7 @@ void loop() {
 
             float cv = (media != 0) ? (desvio_padrao / media) * 100.0 : 0;
 
-            Serial.printf("Media: %.2f | CV: %.2f%%\n", media, cv);
+            Serial.printf("Media: %.2f °C | CV: %.2f%%\n", media, cv);
 
             if (cv > 10.0) {
                 Serial.println("Aviso: CV > 10%! Medição instável.");
@@ -140,5 +140,7 @@ float ler_lm35() {
     int cru = analogRead(PINO_LM35);
     float voltagem = cru * (3.3 / 4095.0);
     // O lm35 tem uma saída linear de 10mV/°C, então multiplicamos a voltagem por 100 para obter a temperatura em °C.
-    return voltagem * 100.0 + OFFSET_LEITURA;
+    float temp = voltagem * 100.0 + OFFSET_LEITURA;
+    Serial.printf("Leitura bruta: %d | Tensão: %.3f V | Temperatura: %.2f °C\n", cru, voltagem, temp);
+    return temp;
 }
