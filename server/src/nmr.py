@@ -39,6 +39,9 @@ class SensorData:
             self.offset = offset
 
     def update_agreement(self, agrees: bool):
+        '''
+        Update the agreement count based on whether the sensor's value agrees with the baseline.
+        '''
         if self._agree_count and agrees == (self._agree_count < 0):
             self._agree_count = 0
         self._agree_count += 1 if agrees else -1
@@ -82,29 +85,50 @@ class NMR:
         self._consensus_agree_cycles = 3
 
     def get_state(self) -> str:
+        '''
+        Get the current state of the NMR system. This can be used for monitoring and debugging purposes.
+        '''
         return self._state
 
     def get_last_safe(self) -> int | None:
+        '''
+        Get the last known safe value that was agreed upon by the sensors. This is the value that will be returned in case of disagreement or instability.
+        '''
         return self._last_safe
 
     def update_sensor(self, sensor_id: str, raw_value: int):
+        '''
+        Update the raw value for a given sensor. If the sensor is new, it will be added to the system.
+        '''
         if sensor_id not in self.sensor_data:
             self.sensor_data[sensor_id] = SensorData(raw_value)
         else:
             self.sensor_data[sensor_id].update(raw_value)
 
     def tune_sensor(self, sensor_id: str, factor: float | None = None, offset: int | None = None):
+        '''
+        Tune the sensor's calibration parameters.
+
+        factor: Multiplier for the raw value (e.g., 1.05 to increase by 5%)
+        offset: Value to add to the scaled value (e.g., -2 to decrease by 2 degrees)
+        '''
         if sensor_id not in self.sensor_data:
             self.logger.warning("Sensor \"%s\" not registered yet, setting it anyway...", sensor_id)
             self.sensor_data[sensor_id] = SensorData(0)
         self.sensor_data[sensor_id].tune(factor, offset)
 
     def _within_tolerance(self, a: int, b: float) -> bool:
+        '''
+        Check if value a is within the tolerance percentage of value b.
+        '''
         if b == 0:
             return a == 0
         return abs(a - b) / abs(b) * 100 <= self.tolerance
 
     def _alive_sensors(self) -> dict[str, SensorData]:
+        '''
+        Return a dictionary of sensors that have updated their data within the stale timeout period.
+        '''
         now = time.time()
         return {
             sensor_id: data
@@ -113,6 +137,9 @@ class NMR:
         }
 
     def _log_sensor_status(self, alive_sensors: dict[str, SensorData]) -> None:
+        '''
+        Log the status of each alive sensor, including whether it is isolated and its agreement count.
+        '''
         if not self.verbose:
             return
         for sensor_id, data in alive_sensors.items():
@@ -131,14 +158,14 @@ class NMR:
         Evaluate one NMR cycle and return the voted value.
 
         States:
-            NORMAL
-            RECOVERING_CONSENSUS
-            CONSENSUS
-            MASKED_FAILURE
-            DEGRADED
-            RECOVERING_DEGRADED
-            UNSTABLE
-            NO_DATA
+            NORMAL               - All sensors agree, normal operation
+            RECOVERING_CONSENSUS - Sensors recently disagreed but are now agreeing again, recovering consensus
+            CONSENSUS            - All active sensors agree, but we haven't had enough cycles to confirm stability yet
+            MASKED_FAILURE       - Some sensors disagree but we have a majority, masking the failure
+            DEGRADED             - Only a subset of sensors agree, degraded operation
+            RECOVERING_DEGRADED  - Sensors are recovering from a degraded state
+            UNSTABLE             - Sensors are in an unstable state, no consensus
+            NO_DATA              - No sensor data available
         '''
         alive = self._alive_sensors()
         self._log_sensor_status(alive)
@@ -147,10 +174,12 @@ class NMR:
             self._state = "NO_DATA"
             return self._last_safe if self._last_safe is not None else self.failsafe
 
+        # Consider only non-isolated sensors for baseline calculation, but if all are isolated, use them anyway
         active = {sensor_id: data for sensor_id, data in alive.items() if not data.is_isolated()}
         baseline_values = [d.get_value() for d in (active.values() or alive.values())]
         baseline_mean = sum(baseline_values) / len(baseline_values)
 
+        # Update agreement counts and isolation status based on agreement with baseline mean
         for data in alive.values():
             agrees = self._within_tolerance(data.get_value(), baseline_mean)
             data.update_agreement(agrees)
@@ -162,20 +191,24 @@ class NMR:
 
         active_values = [d.get_value() for d in alive.values() if not d.is_isolated()]
 
+        # Voting logic based on number of active sensors and their agreement
         if not active_values:
             self._degraded_agree_cycles = 0
             self._state = "UNSTABLE"
             return self._last_safe if self._last_safe is not None else self.failsafe
 
+        # If only one active sensor, we have no choice but to trust it, but we can't confirm agreement
         if len(active_values) == 1:
             self._degraded_agree_cycles = 0
             self._state = "UNSTABLE"
             return self._last_safe if self._last_safe is not None else active_values[0]
 
+        # If two active sensors, we can only check if they agree with each other, but we can't confirm consensus
         if len(active_values) == 2:
             self._consensus_agree_cycles = 0
             a, b = active_values
 
+            # If they agree, we can consider it a degraded agreement, but we need multiple cycles to confirm stability
             if self._within_tolerance(a, b):
                 self._degraded_agree_cycles += 1
                 voted = min(active_values)
@@ -187,6 +220,7 @@ class NMR:
                 self._state = "RECOVERING_DEGRADED"
                 return self._last_safe
 
+            # If they disagree, we have no consensus and must fall back to last safe value or failsafe
             self._degraded_agree_cycles = 0
             self._state = "UNSTABLE"
             return self._last_safe if self._last_safe is not None else min(active_values)
@@ -194,19 +228,23 @@ class NMR:
         safe_values = [v for v in active_values if self._within_tolerance(v, baseline_mean)]
         voted = min(safe_values) if safe_values else min(active_values)
 
+        # If all active sensors agree, we can consider it a consensus agreement, but we need multiple cycles to confirm stability
         if len(safe_values) == len(active_values):
             self._consensus_agree_cycles += 1
             self._degraded_agree_cycles = 3
 
+            # If we have had enough consecutive consensus agreements, or if we don't have a last safe value yet, we can update the last safe value and consider it a stable consensus
             if self._consensus_agree_cycles >= 3 or self._last_safe is None:
                 self._last_safe = voted
                 self._state = "CONSENSUS"
                 return voted
 
+            # We are in the process of recovering consensus, but we need more cycles to confirm stability
             self._last_safe = voted
             self._state = "RECOVERING_CONSENSUS"
             return voted
 
+        # If we have some disagreement but still have a majority of sensors agreeing, we can mask the failure and use the majority value, but we need multiple cycles to confirm stability
         self._consensus_agree_cycles = 0
         self._last_safe = voted
         self._state = "MASKED_FAILURE"
