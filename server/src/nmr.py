@@ -93,6 +93,12 @@ class NMR:
         else:
             self.sensor_data[sensor_id].update(raw_value)
 
+    def tune_sensor(self, sensor_id: str, factor: float | None = None, offset: int | None = None):
+        if sensor_id not in self.sensor_data:
+            self.logger.warning("Sensor \"%s\" not registered yet, setting it anyway...", sensor_id)
+            self.sensor_data[sensor_id] = SensorData(0)
+        self.sensor_data[sensor_id].tune(factor, offset)
+
     def _within_tolerance(self, a: int, b: float) -> bool:
         if b == 0:
             return a == 0

@@ -138,5 +138,25 @@ def run():
         client.disconnect()
 
 
+def tune_sensors():
+    x = ''
+    while x != '0':
+        x = input("Enter sensor ID to tune (or '0' to finish): ").strip()
+        if x == '0':
+            break
+        if x:
+            factor_input = input(f"Enter factor for {x} (default 1.0): ").strip()
+            offset_input = input(f"Enter offset for {x} (default 0.0): ").strip()
+
+            try:
+                factor = float(factor_input) if factor_input else 1.0
+                offset = float(offset_input) if offset_input else 0.0
+                VOTER.tune_sensor(x, factor, offset)
+            except ValueError:
+                logger.warning("Invalid input for factor or offset.")
+
+
 if __name__ == "__main__":
+    if input("Tune sensors? (y/N)").strip().lower() == "y":
+        tune_sensors()
     run()
