@@ -51,7 +51,8 @@ void setup() {
     Serial.begin(9600);
     delay(1000);
 
-    pinMode(PINO_LM35, INPUT);
+    // pinMode(PINO_LM35, INPUT);
+    analogSetPinAttenuation(PINO_LM35, ADC_0db);
 
     // Conexão WiFi e Broker
     while (setupWiFi(ssid, senha) != WL_CONNECTED) delay(1000);
@@ -137,10 +138,16 @@ void publicar_dados(float temperatura) {
 }
 
 float ler_lm35() {
-    int cru = analogRead(PINO_LM35);
-    float voltagem = cru * (3.3 / 4095.0);
-    // O lm35 tem uma saída linear de 10mV/°C, então multiplicamos a voltagem por 100 para obter a temperatura em °C.
-    float temp = voltagem * 100.0 + OFFSET_LEITURA;
-    Serial.printf("Leitura bruta: %d | Tensão: %.3f V | Temperatura: %.2f °C\n", cru, voltagem, temp);
+    float temp = 0.0;
+    int repeat = 100;
+    for (int i = 0; i < repeat; i++) {
+        int cru = analogRead(PINO_LM35);
+        float milivolts = (float) (cru / 4095.0) * 1100.0;
+        temp += (milivolts / 10.0);
+        delayMicroseconds(10);
+    }
+    temp /= repeat;
+    temp += OFFSET_LEITURA;
+    Serial.printf("Leitura média de %d amostras | Temperatura: %.2f °C\n", repeat, temp);
     return temp;
 }
